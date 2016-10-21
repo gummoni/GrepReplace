@@ -24,10 +24,10 @@ namespace GrepReplace
             var replaceWord = textBox4.Text;
             var files = GetFiles();
             textBox5.Text += $"{searchWord},{replaceWord}\r\n";
-            foreach (var filename in files)
+            Parallel.ForEach(files, filename =>
             {
                 Replace(filename, searchWord, replaceWord);
-            }
+            });
         }
 
         /// <summary>
@@ -44,6 +44,40 @@ namespace GrepReplace
             var before = File.ReadAllLines(filename);
             var after = before.Select(_ => _.Replace(searchWord, replaceWord)).ToArray();
             File.WriteAllLines(filename, after);
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            var lines = textBox5.Text.Split('\n').Select(_ => _.Replace("\r", ""));
+            var files = GetFiles();
+            foreach (var line in lines)
+            {
+                if (string.IsNullOrEmpty(line)) continue;
+                var rows = line.Split(',');
+                foreach (var filename in files)
+                {
+                    if (filename.Contains(rows[0]))
+                    {
+                        var outname = filename.Replace(rows[0], rows[1]);
+                        File.Move(filename, outname);
+                    }
+                }
+            }
+        }
+
+        private void Form1_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            var text = textBox5.Text;
+            File.WriteAllText("log.txt", text);
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            if (File.Exists("log.txt"))
+            {
+                var text = File.ReadAllText("log.txt");
+                textBox5.Text = text;
+            }
         }
     }
 }
